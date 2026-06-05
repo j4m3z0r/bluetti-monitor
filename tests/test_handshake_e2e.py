@@ -140,9 +140,19 @@ class FakeBleakClient:
             self._emit(frame)
 
 
+async def _no_scan(*_a, **_k):
+    return None
+
+
+async def _noop(*_a, **_k):
+    return None
+
+
 @pytest.mark.asyncio
 async def test_encrypted_handshake_and_read(monkeypatch):
     monkeypatch.setattr(client_mod, "BleakClient", FakeBleakClient)
+    monkeypatch.setattr(client_mod.BleakScanner, "find_device_by_address", _no_scan)
+    monkeypatch.setattr(BluettiClient, "_clear_stale_bluez_connection", _noop)
     client = BluettiClient("FA:KE:00:00:00:01", encrypted=True)
     await client.connect()
     assert client._shared_key is not None
@@ -169,6 +179,8 @@ class FakePlainBleakClient(FakeBleakClient):
 @pytest.mark.asyncio
 async def test_plaintext_read(monkeypatch):
     monkeypatch.setattr(client_mod, "BleakClient", FakePlainBleakClient)
+    monkeypatch.setattr(client_mod.BleakScanner, "find_device_by_address", _no_scan)
+    monkeypatch.setattr(BluettiClient, "_clear_stale_bluez_connection", _noop)
     client = BluettiClient("FA:KE:00:00:00:02", encrypted=False)
     await client.connect()
     resp = await client.read_registers(0x0A, 0x3B)

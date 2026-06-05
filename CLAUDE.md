@@ -107,8 +107,11 @@ client path without hardware. Keep new pure logic (framing/crypto/fields) covere
   bytes. Getting this wrong hangs the poll loop waiting for bytes that never come.
 - **BlueZ connect**: resolve the address via `BleakScanner.find_device_by_address`
   before `BleakClient.connect()` — BlueZ won't connect to an address it hasn't
-  recently discovered. A killed run leaves the device connected (not advertising);
-  `bluetoothctl disconnect <addr>` clears it.
+  recently discovered. A killed run leaves the device connected (not advertising),
+  which blocks reconnect; `connect()` auto-clears this over the BlueZ D-Bus API
+  (`_clear_stale_bluez_connection`, best-effort, Linux only), so container
+  restarts and reboots self-recover. `bluetoothctl disconnect <addr>` is the
+  manual equivalent.
 - **Encrypted handshake signature** signs the *raw bytes* `our_pub(64) ||
   randomMd5(16)`, not the ASCII hex. And derive the ECDH shared key *before*
   sending the sign frame — the device's "done" reply can arrive first.

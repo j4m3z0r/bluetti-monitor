@@ -113,10 +113,11 @@ bluetti-monitor mqtt AA:BB:CC:DD:EE:FF --mqtt-host 192.168.1.10 \
     --mqtt-username ha --mqtt-password secret
 ```
 
-> **BlueZ tip (Linux):** if a previous run was killed it can leave the device
-> BLE-connected, so it stops advertising and new connects fail with "device not
-> found". Clear it with `bluetoothctl disconnect AA:BB:CC:DD:EE:FF` (a BLE
-> disconnect does not affect the power station's outputs).
+> **BlueZ note (Linux):** a killed run can leave the device BLE-connected, so it
+> stops advertising and new connects fail with "device not found". The bridge
+> clears this automatically on (re)connect, so container restarts and reboots
+> recover on their own. To clear it by hand: `bluetoothctl disconnect
+> AA:BB:CC:DD:EE:FF` (a BLE disconnect does not affect the power station's outputs).
 
 ## Home Assistant
 

@@ -59,6 +59,11 @@ class BluettiClient:
 
     # -- connection ---------------------------------------------------------
     async def connect(self) -> None:
+        # A previous (killed) run can leave the device connected at the BlueZ
+        # level — which also stops it advertising, so the scan below fails with
+        # "not found".  Proactively drop any lingering connection first.
+        await self._clear_stale_bluez_connection()
+
         # Resolve the address to a device first: BlueZ will not connect to an
         # address it has not recently discovered.  Falls back to connecting by
         # raw address (e.g. a cached CoreBluetooth UUID on macOS).
@@ -87,6 +92,47 @@ class BluettiClient:
             except asyncio.TimeoutError as exc:
                 raise BluettiClientError("encrypted handshake timed out") from exc
             log.info("handshake complete")
+
+    async def _clear_stale_bluez_connection(self) -> None:
+        """Best-effort: if BlueZ still holds a connection to our device (e.g.
+        from a killed run), disconnect it so we can reconnect and so it resumes
+        advertising.  Linux/BlueZ only; silently skipped elsewhere.
+        """
+        try:
+            from dbus_fast.aio import MessageBus
+            from dbus_fast.constants import BusType
+        except Exception:
+            return  # not a dbus-fast/BlueZ platform (e.g. macOS)
+        bus = None
+        try:
+            bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+            intro = await bus.introspect("org.bluez", "/")
+            mgr = bus.get_proxy_object("org.bluez", "/", intro).get_interface(
+                "org.freedesktop.DBus.ObjectManager"
+            )
+            target = self.address.upper()
+            for path, ifaces in (await mgr.call_get_managed_objects()).items():
+                dev = ifaces.get("org.bluez.Device1")
+                if not dev:
+                    continue
+                addr = dev.get("Address")
+                connected = dev.get("Connected")
+                if addr and addr.value.upper() == target and connected and connected.value:
+                    dintro = await bus.introspect("org.bluez", path)
+                    di = bus.get_proxy_object("org.bluez", path, dintro).get_interface(
+                        "org.bluez.Device1"
+                    )
+                    await di.call_disconnect()
+                    log.info("cleared stale BlueZ connection to %s", self.address)
+                    await asyncio.sleep(2)  # let it start advertising again
+        except Exception as exc:  # noqa: BLE001 - best effort
+            log.debug("stale-connection clear skipped: %s", exc)
+        finally:
+            if bus is not None:
+                try:
+                    bus.disconnect()
+                except Exception:
+                    pass
 
     async def disconnect(self) -> None:
         if self._client is not None and self._client.is_connected:
