@@ -1,0 +1,21 @@
+# Copy this file to config.yml and fill in your values.
+# config.yml is gitignored — never commit it.
+#
+# Under Docker, mount it read-only at /config/config.yml:
+#   volumes:
+#     - ./config.yml:/config/config.yml:ro
+
+mqtt:
+  host: "homeassistant.home.arpa"     # required — IP or hostname of your MQTT broker
+  port: 1883
+  username: "mqtt"                    # leave blank if your broker doesn't require auth
+  password: "mqtt"
+  discovery_prefix: "homeassistant"   # match your HA MQTT discovery prefix
+
+bluetti:
+  ble_address: "AA:BB:CC:DD:EE:FF"    # required — BLE address (find with: bluetti-monitor scan)
+  device_name: "Bluetti AC180P"       # name shown in Home Assistant
+  poll_interval: 10                   # seconds between status polls
+  # encrypted: false                  # force on/off; auto-detected from advertised name otherwise
+
+log_level: "INFO"   # DEBUG, INFO, WARNING, or ERROR

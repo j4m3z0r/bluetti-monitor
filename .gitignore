@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+config.yaml
+config.yml
+.pytest_cache/
+*.apk
+BLUETTI-*.apk

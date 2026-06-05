@@ -1,0 +1,14 @@
+services:
+  bluetti-mqtt:
+    build: .
+    restart: unless-stopped
+
+    # BLE requires access to the host's Bluetooth stack.
+    # BlueZ runs on the host and the container communicates with it via D-Bus.
+    network_mode: host
+    volumes:
+      - /var/run/dbus:/var/run/dbus
+      - ./config.yml:/config/config.yml:ro
+    cap_add:
+      - NET_ADMIN   # BLE adapter management
+      - NET_RAW     # BLE raw socket access

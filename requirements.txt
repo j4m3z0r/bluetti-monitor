@@ -1,0 +1,11 @@
+# Core BLE library
+bleak>=0.21.0
+
+# Encryption for BLUETTE (encrypted) devices
+cryptography>=41
+
+# MQTT client
+paho-mqtt>=2.0
+
+# Config file parsing
+pyyaml>=6.0
